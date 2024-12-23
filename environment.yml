@@ -1,8 +1,8 @@
-name: intervention_rl
+name: intervention_safe
 channels:
   - pytorch
-  - conda-forge
   - defaults
+  - conda-forge
 dependencies:
   - _libgcc_mutex=0.1=main
   - _openmp_mutex=5.1=1_gnu
@@ -10,8 +10,8 @@ dependencies:
   - blas=1.0=mkl
   - brotli-python=1.0.9=py38h6a678d5_8
   - bzip2=1.0.8=h5eee18b_6
-  - ca-certificates=2024.9.24=h06a4308_0
-  - certifi=2024.8.30=py38h06a4308_0
+  - ca-certificates=2024.12.14=hbcca054_0
+  - certifi=2024.8.30=pyhd8ed1ab_0
   - charset-normalizer=3.3.2=pyhd3eb1b0_0
   - cloudpickle=3.0.0=pyhd8ed1ab_0
   - cudatoolkit=10.1.243=h6bb024c_0
@@ -22,7 +22,6 @@ dependencies:
   - gmp=6.2.1=h295c915_3
   - gmpy2=2.1.2=py38heeb90bb_0
   - gnutls=3.6.15=he1e5248_0
-  - gymnasium=0.29.1=py38hb563948_1
   - hydra-core=1.3.2=pyhd8ed1ab_0
   - idna=3.7=py38h06a4308_0
   - importlib-metadata=8.5.0=pyha770c72_0
@@ -65,8 +64,6 @@ dependencies:
   - ncurses=6.4=h6a678d5_0
   - nettle=3.7.3=hbbd107a_1
   - networkx=3.1=py38h06a4308_0
-  - numpy=1.24.3=py38hf6e8229_1
-  - numpy-base=1.24.3=py38h060ed82_1
   - omegaconf=2.3.0=pyhd8ed1ab_0
   - openh264=2.1.1=h4ff587b_0
   - openjpeg=2.5.2=he7f1fd0_0
@@ -74,11 +71,11 @@ dependencies:
   - packaging=24.1=pyhd8ed1ab_0
   - pillow=10.4.0=py38h5eee18b_0
   - pip=24.2=py38h06a4308_0
+  - platformdirs=4.3.6=pyhd8ed1ab_0
   - pooch=1.7.0=py38h06a4308_0
   - pysocks=1.7.1=py38h06a4308_0
   - python=3.8.18=h955ad1f_0
   - python_abi=3.8=2_cp38
-  - pytorch=2.4.1=py3.8_cpu_0
   - pytorch-mutex=1.0=cpu
   - pyyaml=6.0.1=py38h5eee18b_0
   - readline=8.2=h5eee18b_0
@@ -91,9 +88,7 @@ dependencies:
   - tbb=2021.8.0=hdb19cb5_0
   - threadpoolctl=3.5.0=py38h2f386ee_0
   - tk=8.6.14=h39e8969_0
-  - torchaudio=2.4.1=py38_cpu
-  - torchvision=0.19.1=py38_cpu
-  - typing_extensions=4.11.0=py38h06a4308_0
+  - typing_extensions=4.12.2=pyha770c72_0
   - urllib3=2.2.2=py38h06a4308_0
   - wheel=0.44.0=py38h06a4308_0
   - xz=5.4.6=h5eee18b_1
@@ -102,25 +97,107 @@ dependencies:
   - zlib=1.2.13=h5eee18b_1
   - zstd=1.5.5=hc292b87_2
   - pip:
+      - absl-py==2.1.0
       - ale-py==0.8.1
-      - autorom==0.4.2
+      - annotated-types==0.7.0
+      - asttokens==3.0.0
+      - autorom==0.6.1
       - autorom-accept-rom-license==0.6.1
+      - backcall==0.2.0
+      - cachetools==5.5.0
+      - cffi==1.17.1
       - click==8.1.7
+      - contourpy==1.1.1
+      - cycler==0.12.1
+      - cython==0.29.24
+      - decorator==5.1.1
       - docker-pycreds==0.4.0
-      - fsspec==2024.9.0
+      - eval-type-backport==0.2.0
+      - executing==2.1.0
+      - fasteners==0.19
+      - fonttools==4.55.3
+      - fsspec==2024.10.0
       - gitdb==4.0.11
       - gitpython==3.1.43
+      - glfw==2.8.0
+      - google-auth==2.37.0
+      - google-auth-oauthlib==1.0.0
+      - grpcio==1.68.1
+      - gymnasium==0.28.1
+      - gymnasium-robotics==1.2.2
+      - hydra-submitit-launcher==1.2.0
       - imageio==2.35.1
       - intervention-rl==1.0
+      - ipdb==0.13.13
+      - ipython==8.12.3
+      - jedi==0.19.2
+      - kiwisolver==1.4.7
+      - markdown==3.7
+      - markdown-it-py==3.0.0
+      - matplotlib==3.7.5
+      - matplotlib-inline==0.1.7
+      - mdurl==0.1.2
+      - mujoco==2.3.3
+      - numpy==1.23.5
+      - nvidia-cublas-cu11==11.11.3.6
+      - nvidia-cuda-cupti-cu11==11.8.87
+      - nvidia-cuda-nvrtc-cu11==11.8.89
+      - nvidia-cuda-runtime-cu11==11.8.89
+      - nvidia-cudnn-cu11==9.1.0.70
+      - nvidia-cufft-cu11==10.9.0.58
+      - nvidia-curand-cu11==10.3.0.86
+      - nvidia-cusolver-cu11==11.4.1.48
+      - nvidia-cusparse-cu11==11.7.5.86
+      - nvidia-nccl-cu11==2.20.5
+      - nvidia-nvtx-cu11==11.8.86
+      - oauthlib==3.2.2
       - opencv-python==4.10.0.84
-      - platformdirs==4.3.6
-      - psutil==6.0.0
-      - ruff==0.6.8
-      - sentry-sdk==2.15.0
-      - setproctitle==1.3.3
+      - pandas==2.0.3
+      - parso==0.8.4
+      - pettingzoo==1.24.3
+      - pexpect==4.9.0
+      - pickleshare==0.7.5
+      - prompt-toolkit==3.0.48
+      - protobuf==5.29.1
+      - psutil==6.1.0
+      - ptyprocess==0.7.0
+      - pure-eval==0.2.3
+      - pyasn1==0.6.1
+      - pyasn1-modules==0.4.1
+      - pycparser==2.22
+      - pydantic==2.10.3
+      - pydantic-core==2.27.1
+      - pygame==2.1.0
+      - pygments==2.18.0
+      - pyopengl==3.1.7
+      - pyparsing==3.1.4
+      - python-dateutil==2.9.0.post0
+      - pytz==2024.2
+      - requests-oauthlib==2.0.0
+      - rich==13.9.4
+      - rsa==4.9
+      - ruff==0.8.3
+      - safety-gymnasium==1.0.0
+      - sentry-sdk==2.19.2
+      - setproctitle==1.3.4
       - shimmy==0.2.1
-      - six==1.16.0
+      - six==1.17.0
       - smmap==5.0.1
-      - tqdm==4.66.5
-      - wandb==0.18.2
-prefix: /home/jaiv/miniconda3/envs/intervention_rl
+      - stable-baselines3==2.0.0
+      - stack-data==0.6.3
+      - submitit==1.5.2
+      - tensorboard==2.14.0
+      - tensorboard-data-server==0.7.2
+      - tomli==2.2.1
+      - torch==2.4.1+cu118
+      - torchaudio==2.4.1+cu118
+      - torchvision==0.19.1+cu118
+      - tqdm==4.67.1
+      - traitlets==5.14.3
+      - triton==3.0.0
+      - tzdata==2024.2
+      - wandb==0.19.1
+      - wcwidth==0.2.13
+      - werkzeug==3.0.6
+      - xmltodict==0.14.2
+prefix: /home1/jpdoshi/.conda/envs/intervention_safe
