@@ -1,0 +1,28 @@
+# @package hydra.launcher
+_target_: hydra_plugins.hydra_submitit_launcher.submitit_launcher.SlurmLauncher
+submitit_folder: ${hydra.sweep.dir}/.submitit/%j
+timeout_min: 720
+cpus_per_task: 8
+tasks_per_node: 1
+gpus_per_task: p100:1
+mem_gb: 30
+nodes: 1
+name: ${hydra.job.name}
+
+# Slurm-specific parameters
+partition: gpu
+account: biyik_1165
+gres: gpu:p100:1
+
+# Setup the Conda environment
+setup:
+  - source /spack/conda/miniforge3/24.3.0/etc/profile.d/conda.sh  # Load Conda
+  - conda activate intervention_rl                                # Activate your Conda environment
+  - export PYTHONPATH=$PYTHONPATH:/home1/jpdoshi/intervention-rl  # Set PYTHONPATH to include your project root
+  - export MUJOCO_GL=egl                                          # Set MuJoCo to use EGL
+
+# Additional Slurm options
+signal_delay_s: 120
+max_num_timeout: 0
+array_parallelism: 256
+additional_parameters: {}

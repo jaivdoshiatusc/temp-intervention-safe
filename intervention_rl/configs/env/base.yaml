@@ -1,0 +1,13 @@
+num_envs: 1
+name: null
+
+obs_dim: null
+action_dim: null
+
+max_timesteps: null
+
+cam_height: null
+cam_width: null
+
+catastrophe_clearance: null
+blocker_clearance: null
