@@ -1,9 +1,11 @@
+import numpy as np
+
 class MLPBlockerHeuristic:
     def __init__(self):
         pass
     
     def is_catastrophe(self, cost):   
-        if cost > 0:
+        if np.any(cost > 0):  # Checks if any element in `cost` is greater than 0
             return True
         return False
 

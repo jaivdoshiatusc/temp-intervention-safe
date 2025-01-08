@@ -70,6 +70,7 @@ class SafetyEvalCallback(BaseCallback):
         exp_type = self.model.exp_type
         blocker_switch_time = self.model.blocker_switch_time
         num_timesteps = self.num_timesteps
+        self._last_cost = 0.0
 
         for episode in range(self.n_eval_episodes):
             episode_reward = 0.0
@@ -112,17 +113,14 @@ class SafetyEvalCallback(BaseCallback):
                             episode_exp_interventions += 1                            
 
                 elif exp_type in ["expert"]:
-                    old_full_obs = self.eval_env.envs[0].unwrapped.render()
-                    blocker_heuristic_decision = self.model.blocker_heuristic.should_block(old_full_obs, action_item)
+                    blocker_heuristic_decision = self.model.blocker_heuristic.should_block(obs, self._last_cost)
                     if blocker_heuristic_decision:
                         action_item = self.new_action
                         episode_env_interventions += 1
                         episode_exp_interventions += 1
-
-                # Ensure action_item is in the correct format for the environment
-                action = np.array([action_item]) if not isinstance(action_item, np.ndarray) else action_item
-
-                new_obs, reward, cost, terminated, truncated, infos = self.eval_env.step(action)
+                
+                new_obs, reward, cost, terminated, truncated, infos = self.eval_env.step(action_item)
+                self._last_cost = cost
                 
                 # Capture frames for GIF
                 if create_gif:

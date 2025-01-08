@@ -90,6 +90,7 @@ class PPO_HIRL(PPO):
 
         # Initialize environment variables
         self.policy_type = policy
+        self._last_info = [{'cost_hazards': 0.0, 'cost_sum': 0.0, 'cost': 0.0, 'TimeLimit.truncated': False}] * self.env.num_envs
 
         # Initialize blocker variables
         self.env_name = env_name
@@ -141,9 +142,9 @@ class PPO_HIRL(PPO):
         self._current_episode_env_intervention = np.zeros(self.env.num_envs)
         self._current_episode_exp_intervention = np.zeros(self.env.num_envs)
 
-        self.blocker_heuristic = MLPBlockerHeuristic(self.catastrophe_clearance)
+        self.blocker_heuristic = MLPBlockerHeuristic()
         if self.exp_type in ["ours", "hirl"]:
-            self.blocker_heuristic = MLPBlockerHeuristic(self.catastrophe_clearance)
+            self.blocker_heuristic = MLPBlockerHeuristic()
             self.blocker_model = MLPBlockerTrainer(action_size=env.action_space.n, device=self.device)
 
     def get_env_state(self, env, env_name, env_idx, policy_type, saved_obs):
@@ -169,7 +170,7 @@ class PPO_HIRL(PPO):
         :param n_rollout_steps: Number of experiences to collect per environment
         :return: True if function returned with at least `n_rollout_steps`
             collected, False if callback terminated rollout prematurely.
-        """
+        """    
         assert self._last_obs is not None, "No previous observation was provided"
         # Switch to eval mode (this affects batch norm / dropout)
         self.policy.set_training_mode(False)
@@ -179,6 +180,7 @@ class PPO_HIRL(PPO):
         # Sample new weights for the state dependent exploration
         if self.use_sde:
             self.policy.reset_noise(env.num_envs)
+
 
         callback.on_rollout_start()
 
@@ -239,7 +241,7 @@ class PPO_HIRL(PPO):
                     if self.exp_type in ["ours", "hirl"]:
                         # Human Oversight Phase (Training the Blocker)
                         if self.num_timesteps <= self.blocker_switch_time:
-                            blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs, action)
+                            blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs, self._last_info[i].get('cost', 0))
                             blocker_model_decision, model_entropy, disagreement_prob = self.blocker_model.should_block(
                                 agent_obs,
                                 action,
@@ -274,7 +276,7 @@ class PPO_HIRL(PPO):
                                 self.blocker_model.load_weights(self.pretrained_blocker)
                                 self.pretrained_blocker_switch = True
                             
-                            blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs, action)
+                            blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs, self._last_info[i].get('cost', 0))
                             # is action shape correct?
                             blocker_model_decision, model_entropy, disagreement_prob = self.blocker_model.should_block(
                                 agent_obs,
@@ -307,7 +309,7 @@ class PPO_HIRL(PPO):
                                 self.blocker_cum_disagreement += 1
 
                     elif self.exp_type == "expert":
-                        blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs)
+                        blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs, self._last_info[i].get('cost', 0))
 
                         if blocker_heuristic_decision:
                                 modified_actions[i] = self.new_action
@@ -325,15 +327,15 @@ class PPO_HIRL(PPO):
             else:
                 new_obs, rewards, dones, infos = env.step(clipped_actions)
 
-            costs = infos.get('cost', 0)
-
             # Increment time step
             self.num_timesteps += env.num_envs
             num_env_steps += env.num_envs
 
+            self._last_info = infos
+
             # Process new observations for catastrophes
             for i in range(env.num_envs):
-                if self.blocker_heuristic.is_catastrophe(costs[i]):
+                if self.blocker_heuristic.is_catastrophe(infos[i].get('cost', 0)):
                     self.cum_catastrophe += 1
                     if self.num_timesteps > self.blocker_switch_time:
                         self.blocker_cum_catastrophe += 1
@@ -437,7 +439,7 @@ class PPO_HIRL(PPO):
                     with th.no_grad():
                         terminal_value = self.policy.predict_values(terminal_obs)[0]  # type: ignore[arg-type]
                     rewards[idx] += self.gamma * terminal_value
-            import ipdb; ipdb.set_trace()
+            
             rollout_buffer.add(
                 self._last_obs,  # type: ignore[arg-type]
                 clipped_actions,

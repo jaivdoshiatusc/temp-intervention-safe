@@ -22,10 +22,10 @@ penalty_type: 'none' # Choose from 'none', 'all', 'blocker'
 penalty: -2 # Penalty for intervention
 
 # Training hyperparameters
-total_timesteps: 5000000          # Total training timesteps
+total_timesteps: 2000000          # Total training timesteps
 log_freq: 10000                    # Log every log_freq timesteps
 eval_freq: 10000                   # Evaluate every eval_freq timesteps
-gif_freq: 50000                  # Generate gif every gif_freq timesteps
+gif_freq: 200000                  # Generate gif every gif_freq timesteps
 save_freq: 10000000                # Save model every save_freq timesteps
 
 # Blocker-related hyperparameters
