@@ -2,7 +2,7 @@ defaults:
     - base
     
 # Environment-specific hyperparameters
-name: 'SafetyRacecarGoal0-v0'
+name: 'SafetyPointGoal1-v0'
 short_name: 'safety'
 new_action: 0
 catastrophe_clearance: 0
