@@ -4,16 +4,16 @@ ppo:
   policy: "MlpPolicy"               # Policy model to use (MlpPolicy, CnnPolicy, ...)
   policy_kwargs: {}                 # Additional arguments for policy model
   
-  learning_rate: 0.00025            # Learning rate for A2C
-  n_steps: 128                      # Number of steps in rollout
-  batch_size: 256                   # Minibatch size
+  learning_rate: 0.001              # Learning rate for A2C
+  n_steps: 16                       # Number of steps in rollout
+  batch_size: 16                    # Minibatch size
   n_epochs: 4                       # Number of optimization epochs
-  gamma: 0.99                       # Discount factor
-  gae_lambda: 0.90                  # GAE (Generalized Advantage Estimation) lambda
+  gamma: 0.999                      # Discount factor
+  gae_lambda: 0.98                  # GAE (Generalized Advantage Estimation) lambda
   clip_range: 0.1                   # Clipping parameter, constant c in PPO
   clip_range_vf: None               # Clipping parameter for the value function, constant c in PPO
   normalize_advantage: true         # Normalize advantage estimates
-  ent_coef: 0.01                    # Entropy coefficient
+  ent_coef: 0.05                    # Entropy coefficient
   vf_coef: 0.5                      # Value function coefficient
   max_grad_norm: 0.5                # Max norm for gradient clipping
   use_sde: false                    # Use State Dependent Exploration (SDE)

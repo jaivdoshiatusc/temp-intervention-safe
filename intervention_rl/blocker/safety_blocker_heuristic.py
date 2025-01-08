@@ -1,12 +1,8 @@
 import numpy as np
 
 class MLPBlockerHeuristic:
-    VIEWPORT_WIDTH = 600  # VIEWPORT_W
-    VIEWPORT_HEIGHT = 400  # VIEWPORT_H
-    SCALE = 30.0  # SCALE
-
-    def __init__(self, clearance=None):
-        pass
+    def __init__(self, clearance=0.5):
+        self.clearance = clearance
 
     def obs_to_pixels(self, obs):
         return 0, 0

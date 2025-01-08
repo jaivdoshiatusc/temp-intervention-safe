@@ -43,7 +43,7 @@ class PPO_HIRL(PPO):
         exp_type="none",
         pretrained_blocker=None,
         blocker_switch_time=100000,
-        new_action=0,
+        new_action=2,
 
         bonus_type="catastrophe",
         alpha=0.01,
@@ -141,38 +141,20 @@ class PPO_HIRL(PPO):
         self._current_episode_env_intervention = np.zeros(self.env.num_envs)
         self._current_episode_exp_intervention = np.zeros(self.env.num_envs)
 
-        if "MlpPolicy" in self.policy_type:
-            self.blocker_heuristic = MLPBlockerHeuristic(self.catastrophe_clearance, self.blocker_clearance)
-            if self.exp_type in ["ours", "hirl"]:
-                self.blocker_heuristic = MLPBlockerHeuristic(self.catastrophe_clearance, self.blocker_clearance)
-                self.blocker_model = MLPBlockerTrainer(action_size=env.action_space.n, device=self.device)
+        self.blocker_heuristic = MLPBlockerHeuristic(self.catastrophe_clearance)
+        if self.exp_type in ["ours", "hirl"]:
+            self.blocker_heuristic = MLPBlockerHeuristic(self.catastrophe_clearance)
+            self.blocker_model = MLPBlockerTrainer(action_size=env.action_space.n, device=self.device)
 
     def get_env_state(self, env, env_name, env_idx, policy_type, saved_obs):
         """
         Extracts the state or observation for a given environment and index.
         Returns an 8-dimensional vector for LunarLander.
         """
-        if "Pong" in env_name:
-            return env.venv.envs[env_idx].unwrapped.render()
-        elif "Breakout" in env_name:
-            return env.venv.envs[env_idx].unwrapped.render()
-        elif "Asteroids" in env_name:
-            return env.venv.envs[env_idx].unwrapped.render()
-        elif "Space" in env_name:
-            return env.venv.envs[env_idx].unwrapped.render()
-        elif "LunarLander" in env_name:
-            return saved_obs[env_idx]
-        elif "MountainCar" in env_name:
-            return saved_obs[env_idx]
-
-        # Default to environment's observation
-        return env.envs[env_idx].unwrapped.state
+        return saved_obs[env_idx]
     
     def get_blocker_env_state(self, env, env_name, env_idx, policy_type, saved_obs):
-        if "Space" in env_name or "Asteroids" in env_name:
-            return env.venv.envs[env_idx].unwrapped.ale.getRAM()
-        else:
-            return self.get_env_state(env, env_name, env_idx, policy_type, saved_obs)
+        return self.get_env_state(env, env_name, env_idx, policy_type, saved_obs)
 
     def collect_rollouts(self, env, callback, rollout_buffer, n_rollout_steps):
         """
@@ -242,7 +224,6 @@ class PPO_HIRL(PPO):
 
             # Intervention logic
             if self.exp_type != "none":
-                import ipdb; ipdb.set_trace()
                 agent_obs_all = [self.get_env_state(env, self.env_name, i, self.policy_type, self._last_obs) for i in range(env.num_envs)] 
                 blocker_heuristic_obs_all = [self.get_blocker_env_state(env, self.env_name, i, self.policy_type, self._last_obs) for i in range(env.num_envs)]               
                 model_entropy_arr = []

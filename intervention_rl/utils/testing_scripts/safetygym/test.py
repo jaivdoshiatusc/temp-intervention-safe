@@ -7,12 +7,19 @@ import imageio
 import random
 import safety_gymnasium
 
+# Dict('accelerometer': Box(-inf, inf, (3,), float64),
+#     'velocimeter': Box(-inf, inf, (3,), float64),
+#     'gyro': Box(-inf, inf, (3,), float64),
+#     'magnetometer': Box(-inf, inf, (3,), float64),
+#     'circle_lidar': Box(0.0, 1.0, (16,), float64))
+
 def main():
     # Create the environment
-    env_id = 'SafetyPointGoal1-v0'
+    env_id = 'SafetyRacecarGoal0-v0'
     env = safety_gymnasium.make(env_id, render_mode="rgb_array", camera_id=1)
 
     obs, info = env.reset()
+    import ipdb; ipdb.set_trace()
     total_steps = 1000
     frames = []
 

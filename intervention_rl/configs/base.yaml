@@ -1,7 +1,7 @@
 device: cuda
 exp_name: intervention_rl
 
-seed: 42
+seed: 31
 exp_type: "none"                  # Type of methods (none, expert, ours, hirl)
 pretrained_blocker: null          # Path to pretrained blocker weights (if any)
 
@@ -18,15 +18,15 @@ eval:
 hp_name: e-${env.short_name}_a-${algo.name}_et-${exp_type}_ent-${algo[${algo.name}].ent_coef}_al-${env.alpha}_be-${env.beta}_io-${env.iota}_s-${seed}
 
 wandb:
-  use: True
+  use: False
   project: modified_hirl
   name: intervention_rl_${hp_name}
   entity: intervention_rl
 
 defaults:
   - _self_
-  - env: pong
-  - algo: a2c
+  - env: safety
+  - algo: ppo
   - override hydra/job_logging: disabled
   # - override hydra/launcher: local
 

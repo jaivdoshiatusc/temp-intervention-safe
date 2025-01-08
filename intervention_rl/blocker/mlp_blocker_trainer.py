@@ -70,6 +70,7 @@ class MLPBlockerTrainer:
         return action_tensor
 
     def train(self, epochs=4, batch_size=32):
+        return
         if len(self.labels) == 0:
             return  # No data to train on
 
@@ -98,6 +99,7 @@ class MLPBlockerTrainer:
         return action_tensor
 
     def should_block(self, obs, action, blocker_heuristic_decision=None):
+        return False
         # Process the obs and action
         obs_tensor = torch.tensor(obs, dtype=torch.float32).unsqueeze(0).to(self.device)  # Add batch dimension
         action_tensor = self.one_hot_encode_action(action, self.action_size).unsqueeze(0).to(self.device)

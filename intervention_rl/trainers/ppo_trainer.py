@@ -11,12 +11,12 @@ from omegaconf import DictConfig, OmegaConf
 from stable_baselines3.common.callbacks import CallbackList
 from stable_baselines3.common.vec_env import VecTransposeImage
 from stable_baselines3.common.vec_env import VecFrameStack
-from stable_baselines3.common.env_util import make_atari_env
-from stable_baselines3.common.env_util import make_vec_env
 
 # Custom
 from intervention_rl.trainers.utils.my_ppo import PPO_HIRL
+from intervention_rl.utils.safe_vec_utils import make_safe_env, make_safe_eval_env
 from intervention_rl.eval.callback_eval_mlp import MLPEvalCallback
+from intervention_rl.eval.callback_eval_safety import SafetyEvalCallback
 from intervention_rl.utils.callback_blocker import BlockerTrainingCallback
 from intervention_rl.utils.callback_checkpoints import CustomCheckpointCallback
 
@@ -42,10 +42,9 @@ class PPOTrainer:
                 sync_tensorboard=True
             )
 
-        # Determine if the environment is an Atari game
-        self.env = safety_gymnasium.vector.make(cfg.env.name, render_mode="rgb_array", num_envs=cfg.env.n_envs)
-        import ipdb; ipdb.set_trace()
-        self.eval_env = safety_gymnasium.vector.make(cfg.env.name, render_mode="rgb_array", num_envs=1)
+        # Create the environment
+        self.env = make_safe_env(cfg.env.name, n_stack=cfg.env.n_stack, seed=cfg.seed)
+        self.eval_env = make_safe_eval_env(cfg.env.name, n_stack=cfg.env.n_stack, seed=cfg.seed + 100)
 
         # Initialize the model (PPO_HIRL)
         self.model = PPO_HIRL(
@@ -93,19 +92,18 @@ class PPOTrainer:
 
     def train(self):
         # Custom evaluation callback
-        if self.cfg.algo.ppo.policy == "MlpPolicy":
-            eval_callback = MLPEvalCallback(
-                cfg = self.cfg,
-                eval_env=self.eval_env,
-                eval_freq=self.cfg.env.eval_freq,
-                eval_seed =self.cfg.eval.eval_seed,
-                gif_freq=self.cfg.env.gif_freq,
-                n_eval_episodes=self.cfg.eval.eval_episodes,
-                new_action=self.cfg.env.new_action,
-                verbose=self.cfg.eval.verbose,
-            )
+        eval_callback = SafetyEvalCallback(
+            cfg = self.cfg,
+            eval_env=self.eval_env,
+            eval_freq=self.cfg.env.eval_freq,
+            eval_seed =self.cfg.eval.eval_seed,
+            gif_freq=self.cfg.env.gif_freq,
+            n_eval_episodes=self.cfg.eval.eval_episodes,
+            new_action=self.cfg.env.new_action,
+            verbose=self.cfg.eval.verbose,
+        )
 
-            callback_list = [eval_callback]
+        callback_list = [eval_callback]
 
         # Blocker training callback with saving functionality
         if self.cfg.exp_type in ["ours", "hirl"]:
