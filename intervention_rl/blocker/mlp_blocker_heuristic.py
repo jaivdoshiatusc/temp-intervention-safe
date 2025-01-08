@@ -1,57 +1,47 @@
-import numpy as np
-
 class MLPBlockerHeuristic:
-    VIEWPORT_WIDTH = 600  # VIEWPORT_W
-    VIEWPORT_HEIGHT = 400  # VIEWPORT_H
-    SCALE = 30.0  # SCALE
-
-    def __init__(self, clearance=None):
+    def __init__(self):
         pass
-
-    def obs_to_pixels(self, obs):
-        return 0, 0
-        # Scale factors as per the environment's specification
-        scale_factors = {'x': 10, 'y': 6.666}
-
-        # Extract position from the observation and apply scale factors
-        x_pos_scaled = obs[0] * scale_factors['x']
-        y_pos_scaled = obs[1] * scale_factors['y']
-
-        # Convert x position: Center of the screen is 0 in the environment's coordinates
-        x_pixel = (x_pos_scaled + self.VIEWPORT_WIDTH / self.SCALE / 2) * self.SCALE
-
-        # Convert y position: Invert y axis for rendering (screen's 0,0 is at top-left)
-        y_pixel = self.VIEWPORT_HEIGHT - (y_pos_scaled + self.VIEWPORT_HEIGHT / self.SCALE / 4) * self.SCALE
-
-        return x_pixel, y_pixel
     
-    def is_catastrophe(self, obs):   
-        return False     
-        x, y, vel_x, vel_y, angle, angular_velocity, leg_1_contact, leg_2_contact = obs
-        adj_x, adj_y = self.obs_to_pixels(obs)
-
-        # Catastrophe conditions
-        in_box = (240 <= adj_x <= 360) and (120 <= adj_y <= 240)  # Render coordinate bounds
-        angle_condition = -0.25 <= angle <= 0.25
-        velocity_condition = vel_y >= -0.50
-
-        return in_box and velocity_condition and angle_condition
-
-    def is_block_zone(self, obs):
-        return False
-        x, y, vel_x, vel_y, angle, angular_velocity, leg_1_contact, leg_2_contact = obs
-        adj_x, adj_y = self.obs_to_pixels(obs)
-
-        # Catastrophe conditions
-        in_box = (240 <= adj_x <= 360) and (110 <= adj_y <= 240)  # Render coordinate bounds
-        angle_condition = -0.30 <= angle <= 0.30
-        velocity_condition = vel_y >= -0.55
-
-        return in_box and velocity_condition and angle_condition
-    
-    def should_block(self, obs, action):
-        return False
-        if self.is_catastrophe(obs) or self.is_block_zone(obs):
+    def is_catastrophe(self, cost):   
+        if cost > 0:
             return True
         return False
+
+    # def is_block_zone(self, obs):
+    #     lidar = obs[28:44]  # Indices 28 through 43
+    #     vase = obs[44:60]   # Indices 44 through 59
+
+    #     # Check lidar elements [0,3] or [12,15]
+    #     if any(lidar[i] > 0.92 for i in range(0, 4)) or any(lidar[i] > 0.92 for i in range(12, 16)):
+    #         return [-1, 0]
+
+    #     # Check lidar elements [4,11]
+    #     if any(lidar[i] > 0.92 for i in range(4, 12)):
+    #         return [1, 0]
+
+    #     # Check vase elements [0,3] or [12,15]
+    #     if any(vase[i] > 0.92 for i in range(0, 4)) or any(vase[i] > 0.92 for i in range(12, 16)):
+    #         return [-1, 0]
+
+    #     # Check vase elements [4,11]
+    #     if any(vase[i] > 0.92 for i in range(4, 12)):
+    #         return [1, 0]
+
+    #     # Default return if no conditions are met
+    #     return [0, 0]
+
+    def is_block_zone(self, obs):
+        lidar = obs[28:44]  # Indices 28 through 43
+        vase = obs[44:60]   # Indices 44 through 59
+
+        # Check if any lidar or vase elements are greater than 0.94
+        if any(value > 0.94 for value in lidar) or any(value > 0.94 for value in vase):
+            return True
+
+        return False
     
+    def should_block(self, obs, cost):
+        if self.is_catastrophe(cost) or self.is_block_zone(obs):
+            return True
+        return False
+

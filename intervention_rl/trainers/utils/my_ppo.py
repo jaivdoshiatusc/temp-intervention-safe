@@ -192,7 +192,6 @@ class PPO_HIRL(PPO):
         else:
             self.custom_ep_info_buffer.clear()
 
-
         while n_steps < n_rollout_steps:
             if self.use_sde and self.sde_sample_freq > 0 and n_steps % self.sde_sample_freq == 0:
                 # Sample a new noise matrix
@@ -233,9 +232,6 @@ class PPO_HIRL(PPO):
                     agent_obs = agent_obs_all[i]
                     blocker_heuristic_obs = blocker_heuristic_obs_all[i]
                     action = clipped_actions[i]
-
-                    if isinstance(action, np.ndarray):
-                        action = action.item()
 
                     blocker_heuristic_decision = False
                     blocker_model_decision = False
@@ -311,7 +307,7 @@ class PPO_HIRL(PPO):
                                 self.blocker_cum_disagreement += 1
 
                     elif self.exp_type == "expert":
-                        blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs, action)
+                        blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs)
 
                         if blocker_heuristic_decision:
                                 modified_actions[i] = self.new_action
@@ -329,14 +325,15 @@ class PPO_HIRL(PPO):
             else:
                 new_obs, rewards, dones, infos = env.step(clipped_actions)
 
+            costs = infos.get('cost', 0)
+
             # Increment time step
             self.num_timesteps += env.num_envs
             num_env_steps += env.num_envs
 
             # Process new observations for catastrophes
             for i in range(env.num_envs):
-                blocker_heuristic_obs = self.get_blocker_env_state(env, self.env_name, i, self.policy_type, self._last_obs)
-                if self.blocker_heuristic.is_catastrophe(blocker_heuristic_obs):
+                if self.blocker_heuristic.is_catastrophe(costs[i]):
                     self.cum_catastrophe += 1
                     if self.num_timesteps > self.blocker_switch_time:
                         self.blocker_cum_catastrophe += 1
@@ -440,7 +437,7 @@ class PPO_HIRL(PPO):
                     with th.no_grad():
                         terminal_value = self.policy.predict_values(terminal_obs)[0]  # type: ignore[arg-type]
                     rewards[idx] += self.gamma * terminal_value
-
+            import ipdb; ipdb.set_trace()
             rollout_buffer.add(
                 self._last_obs,  # type: ignore[arg-type]
                 clipped_actions,

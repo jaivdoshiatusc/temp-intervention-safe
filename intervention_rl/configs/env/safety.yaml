@@ -4,7 +4,7 @@ defaults:
 # Environment-specific hyperparameters
 name: 'SafetyPointGoal1-v0'
 short_name: 'safety'
-new_action: 0
+new_action: [-1, 0]
 catastrophe_clearance: 0
 n_envs: 1
 n_stack: 4
