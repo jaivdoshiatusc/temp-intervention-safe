@@ -6,8 +6,6 @@ import safety_gymnasium
 from omegaconf import DictConfig, OmegaConf
 
 # Defaults
-# from stable_baselines3.common.callbacks import EvalCallback
-# from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.callbacks import CallbackList
 from stable_baselines3.common.vec_env import VecTransposeImage
 from stable_baselines3.common.vec_env import VecFrameStack
@@ -15,7 +13,6 @@ from stable_baselines3.common.vec_env import VecFrameStack
 # Custom
 from intervention_rl.trainers.utils.my_ppo import PPO_HIRL
 from intervention_rl.utils.safe_vec_utils import make_safe_env, make_safe_eval_env
-from intervention_rl.eval.callback_eval_mlp import MLPEvalCallback
 from intervention_rl.eval.callback_eval_safety import SafetyEvalCallback
 from intervention_rl.utils.callback_blocker import BlockerTrainingCallback
 from intervention_rl.utils.callback_checkpoints import CustomCheckpointCallback
@@ -43,8 +40,8 @@ class PPOTrainer:
             )
 
         # Create the environment
-        self.env = make_safe_env(cfg.env.name, n_stack=cfg.env.n_stack, seed=cfg.seed)
-        self.eval_env = make_safe_eval_env(cfg.env.name, n_stack=cfg.env.n_stack, seed=cfg.seed + 100)
+        self.env = make_safe_env(cfg.env.name, seed=cfg.seed)
+        self.eval_env = make_safe_eval_env(cfg.env.name)
 
         # Initialize the model (PPO_HIRL)
         self.model = PPO_HIRL(
@@ -93,13 +90,11 @@ class PPOTrainer:
     def train(self):
         # Custom evaluation callback
         eval_callback = SafetyEvalCallback(
-            cfg = self.cfg,
             eval_env=self.eval_env,
             eval_freq=self.cfg.env.eval_freq,
             eval_seed =self.cfg.eval.eval_seed,
             gif_freq=self.cfg.env.gif_freq,
             n_eval_episodes=self.cfg.eval.eval_episodes,
-            new_action=self.cfg.env.new_action,
             verbose=self.cfg.eval.verbose,
         )
 

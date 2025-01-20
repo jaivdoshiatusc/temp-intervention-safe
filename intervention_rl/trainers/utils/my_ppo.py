@@ -144,8 +144,7 @@ class PPO_HIRL(PPO):
 
         self.blocker_heuristic = MLPBlockerHeuristic()
         if self.exp_type in ["ours", "hirl"]:
-            self.blocker_heuristic = MLPBlockerHeuristic()
-            self.blocker_model = MLPBlockerTrainer(action_size=env.action_space.n, device=self.device)
+            self.blocker_model = MLPBlockerTrainer(device=self.device)
 
     def get_env_state(self, env, env_name, env_idx, policy_type, saved_obs):
         """
@@ -235,8 +234,8 @@ class PPO_HIRL(PPO):
                     blocker_heuristic_obs = blocker_heuristic_obs_all[i]
                     action = clipped_actions[i]
 
-                    blocker_heuristic_decision = False
-                    blocker_model_decision = False
+                    blocker_heuristic_decision = [2,2]
+                    blocker_model_decision = [2,2]
 
                     if self.exp_type in ["ours", "hirl"]:
                         # Human Oversight Phase (Training the Blocker)
@@ -246,7 +245,7 @@ class PPO_HIRL(PPO):
                                 agent_obs,
                                 action,
                                 blocker_heuristic_decision
-                            )
+                            ) 
                             model_entropy_arr.append(model_entropy)
                             disagreement_prob_arr.append(disagreement_prob)
 
@@ -254,10 +253,10 @@ class PPO_HIRL(PPO):
                             total_model_entropy += model_entropy
                             total_disagreement_prob += disagreement_prob
 
-                            self.blocker_model.store(agent_obs, action, blocker_heuristic_decision)
+                            self.blocker_model.store(agent_obs, action, blocker_heuristic_decision) 
 
-                            if blocker_heuristic_decision:
-                                modified_actions[i] = self.new_action
+                            if blocker_heuristic_decision != [2,2]:
+                                modified_actions[i] = blocker_heuristic_decision
 
                                 # Track cum_env_intervention, cum_exp_interventions
                                 self.cum_env_intervention += 1
@@ -269,7 +268,6 @@ class PPO_HIRL(PPO):
                             if blocker_heuristic_decision != blocker_model_decision:
                                 # Track cum_disagreement
                                 self.cum_disagreement += 1
-                        
                         # Blocker Phase
                         else:
                             if self.pretrained_blocker and not self.pretrained_blocker_switch:
@@ -277,27 +275,26 @@ class PPO_HIRL(PPO):
                                 self.pretrained_blocker_switch = True
                             
                             blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs, self._last_info[i].get('cost', 0))
-                            # is action shape correct?
                             blocker_model_decision, model_entropy, disagreement_prob = self.blocker_model.should_block(
                                 agent_obs,
                                 action,
                                 blocker_heuristic_decision
-                            )
+                            ) # this needs to be adapted to accept both blocker_heuristic_decision types
                             model_entropy_arr.append(model_entropy)
                             disagreement_prob_arr.append(disagreement_prob)
 
                             # Track total_model_entropy, total_disagreement_prob
                             total_model_entropy += model_entropy
                             total_disagreement_prob += disagreement_prob
-
-                            if blocker_model_decision:
-                                modified_actions[i] = self.new_action
+                        
+                            if blocker_model_decision != [2,2]:
+                                modified_actions[i] = blocker_model_decision
                                 # Track cum_env_intervention
                                 self.cum_env_intervention += 1
                                 self._current_episode_env_intervention[i] += 1
                                 self.blocker_cum_env_intervention += 1
                                 env_intervention_occurred_this_step[i] = True
-                            if blocker_heuristic_decision:
+                            if blocker_heuristic_decision != [2,2]:
                                 # Track cum_exp_intervention
                                 self.cum_exp_intervention += 1
                                 self._current_episode_exp_intervention[i] += 1
@@ -310,16 +307,16 @@ class PPO_HIRL(PPO):
 
                     elif self.exp_type == "expert":
                         blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs, self._last_info[i].get('cost', 0))
-
-                        if blocker_heuristic_decision:
-                                modified_actions[i] = self.new_action
-                                # Track cum_env_intervention, cum_exp_interventions
-                                self.cum_env_intervention += 1
-                                self.cum_exp_intervention += 1
-                                self._current_episode_env_intervention[i] += 1
-                                self._current_episode_exp_intervention[i] += 1
-                                exp_intervention_occurred_this_step[i] = True
-                                env_intervention_occurred_this_step[i] = True
+                    
+                        if blocker_heuristic_decision != [2,2]:
+                            modified_actions[i] = blocker_heuristic_decision
+                            # Track cum_env_intervention, cum_exp_interventions
+                            self.cum_env_intervention += 1
+                            self.cum_exp_intervention += 1
+                            self._current_episode_env_intervention[i] += 1
+                            self._current_episode_exp_intervention[i] += 1
+                            exp_intervention_occurred_this_step[i] = True
+                            env_intervention_occurred_this_step[i] = True
 
             # Step environment
             if self.exp_type in ["expert", "ours", "hirl"]:

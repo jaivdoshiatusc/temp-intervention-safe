@@ -7,14 +7,17 @@ class SafetyGymnasium2GymnasiumVecEnv(Env):
     """
     Wrapper to convert Safety-Gymnasium environments to the Gymnasium API.
     """
-    def __init__(self, env):
+    def __init__(self, env, seed=31):
         super().__init__()
         self.env = env
+        self.seed = seed
         self.observation_space = env.observation_space
         self.action_space = env.action_space
 
     def reset(self, seed=None):
-        return self.env.reset(seed=seed)
+        if seed is not None:
+            self.seed = seed
+        return self.env.reset(seed=self.seed)
 
     def step(self, actions):
         obs, rewards, costs, terminated, truncated, infos = self.env.step(actions)
@@ -24,27 +27,15 @@ class SafetyGymnasium2GymnasiumVecEnv(Env):
     def render(self):
         return self.env.render()
 
-def make_safe_vec_env(env_id, n_envs=1, seed=31):
-    """
-    Factory function to create a vectorized Safety-Gymnasium environment.
-    """
-    # Use SB3's make_vec_env with the custom wrapper
-    return make_vec_env(
-        env_id=env_id,
-        n_envs=n_envs,
-        seed=seed,
-        wrapper_class=SafetyGymnasium2GymnasiumVecEnv,
-    )
-
-def make_safe_env(env_id, n_stack=4, seed=31):
+def make_safe_env(env_id, seed=31):
     """
     Factory function to create an individual Safety-Gymnasium environment.
     """
     env = safety_gymnasium.make(env_id)
-    env = SafetyGymnasium2GymnasiumVecEnv(env)
+    env = SafetyGymnasium2GymnasiumVecEnv(env, seed=seed)
     return env
 
-def make_safe_eval_env(env_id, n_stack=4, seed=3100):
+def make_safe_eval_env(env_id):
     """
     Factory function to create an individual Safety-Gymnasium environment for evaluation.
     """

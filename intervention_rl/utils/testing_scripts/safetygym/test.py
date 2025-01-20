@@ -44,12 +44,13 @@ class MLPBlockerHeuristic:
     #     # Default return if no conditions are met
     #     return [0, 0]
 
+
     def is_block_zone(self, obs):
-        lidar = obs[28:44]  # Indices 28 through 43
-        vase = obs[44:60]   # Indices 44 through 59
+        gremlins = obs[44:60]  # Indices 44 through 59
+        hazards = obs[60:75]   # Indices 60 through 75
 
         # Check if any lidar or vase elements are greater than 0.94
-        if any(value > 0.94 for value in lidar) or any(value > 0.94 for value in vase):
+        if any(value > 0.94 for value in gremlins) or any(value > 0.94 for value in hazards):
             return True
 
         return False
@@ -90,10 +91,11 @@ def make_safe_env(env_id):
 
 def main():
     # Create the environment
-    env_id = 'SafetyPointGoal1-v0'
+    env_id = 'SafetyPointButton1-v0'
     env = make_safe_env(env_id)
 
     obs = env.reset(seed=42)
+    import ipdb; ipdb.set_trace()
     total_steps = 1000
     frames = []
 

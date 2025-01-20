@@ -2,7 +2,7 @@ defaults:
     - base
     
 # Environment-specific hyperparameters
-name: 'SafetyPointGoal1-v0'
+name: 'SafetyPointButton1-v0'
 short_name: 'safety'
 new_action: [-1, 0]
 catastrophe_clearance: 0
@@ -25,11 +25,11 @@ penalty: -2 # Penalty for intervention
 total_timesteps: 2000000          # Total training timesteps
 log_freq: 10000                    # Log every log_freq timesteps
 eval_freq: 10000                   # Evaluate every eval_freq timesteps
-gif_freq: 200000                  # Generate gif every gif_freq timesteps
+gif_freq: 500000                  # Generate gif every gif_freq timesteps
 save_freq: 10000000                # Save model every save_freq timesteps
 
 # Blocker-related hyperparameters
 blocker_epochs: 4                 # Number of epochs to train the blocker
-blocker_switch_time: 120000       # Timesteps before switching blocker behavior
+blocker_switch_time: 240000       # Timesteps before switching blocker behavior
 blocker_train_freq: 20000         # Train blocker every blocker_train_freq timesteps
 blocker_save_freq: 60000          # Save blocker model every blocker_save_freq timesteps

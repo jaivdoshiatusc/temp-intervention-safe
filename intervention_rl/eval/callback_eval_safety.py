@@ -6,18 +6,14 @@ import io
 from stable_baselines3.common.callbacks import BaseCallback
 
 class SafetyEvalCallback(BaseCallback):
-    def __init__(self, cfg, eval_env, eval_freq, eval_seed, gif_freq, n_eval_episodes, new_action, verbose=1):
+    def __init__(self, eval_env, eval_freq, eval_seed, gif_freq, n_eval_episodes, verbose=1):
         super(SafetyEvalCallback, self).__init__(verbose)
         self.eval_env = eval_env
         self.eval_freq = eval_freq
         self.eval_seed = eval_seed
         self.gif_freq = gif_freq
         self.n_eval_episodes = n_eval_episodes
-        self.catastrophe_clearance = cfg.env.catastrophe_clearance
-        self.blocker_clearance = cfg.env.blocker_clearance
         self.verbose = verbose
-
-        self.new_action = new_action
 
         self.cum_catastrophe = 0
         self.cum_env_intervention = 0
@@ -45,15 +41,6 @@ class SafetyEvalCallback(BaseCallback):
         frame = self.eval_env.render()
         return frame
     
-    def draw_catastrophe(self, frame):
-        return
-        # Draw 'catastrophe' on the image
-        img = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)  # Convert to BGR for OpenCV
-        cv2.putText(img, 'catastrophe', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)  # Red color, smaller font size, lower position
-        frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert back to RGB for rendering
-
-        return frame
-
     def evaluate(self):
         all_episode_rewards = []
         all_episode_lengths = []
@@ -70,7 +57,6 @@ class SafetyEvalCallback(BaseCallback):
         exp_type = self.model.exp_type
         blocker_switch_time = self.model.blocker_switch_time
         num_timesteps = self.num_timesteps
-        self._last_cost = 0.0
 
         for episode in range(self.n_eval_episodes):
             episode_reward = 0.0
@@ -79,6 +65,7 @@ class SafetyEvalCallback(BaseCallback):
             episode_env_interventions = 0
             episode_exp_interventions = 0
             episode_disagreements = 0
+            self._last_cost = 0.0
 
             episode_seed = self.eval_seed + episode
             self.eval_env.set_seed(episode_seed)
@@ -91,31 +78,30 @@ class SafetyEvalCallback(BaseCallback):
                 action_item = action
 
                 if exp_type in ["ours", "hirl"]:
-                    old_full_obs = self.eval_env.envs[0].unwrapped.render()
-                    blocker_heuristic_decision = self.model.blocker_heuristic.should_block(old_full_obs, action_item)
+                    blocker_heuristic_decision = self.model.blocker_heuristic.should_block(obs, self._last_cost)
                     blocker_model_decision, _, _ = self.model.blocker_model.should_block(
-                        old_full_obs,
+                        obs,
                         action_item,
                         blocker_heuristic_decision
                     )
                     if blocker_heuristic_decision != blocker_model_decision:
                         episode_disagreements += 1
                     if num_timesteps <= blocker_switch_time:
-                        if blocker_heuristic_decision:
+                        if blocker_heuristic_decision != [2,2]:
                             episode_env_interventions += 1
                             episode_exp_interventions += 1   
-                            action_item = self.new_action                   
+                            action_item = blocker_heuristic_decision                   
                     else:
-                        if blocker_model_decision:
+                        if blocker_model_decision != [2,2]:
                             episode_env_interventions += 1 
-                            action_item = self.new_action
-                        if blocker_heuristic_decision:
-                            episode_exp_interventions += 1                            
-
+                            action_item = blocker_model_decision
+                        if blocker_heuristic_decision != [2,2]:
+                            episode_exp_interventions += 1 
+                        
                 elif exp_type in ["expert"]:
                     blocker_heuristic_decision = self.model.blocker_heuristic.should_block(obs, self._last_cost)
-                    if blocker_heuristic_decision:
-                        action_item = self.new_action
+                    if blocker_heuristic_decision != [2,2]:
+                        action_item = blocker_heuristic_decision
                         episode_env_interventions += 1
                         episode_exp_interventions += 1
                 
@@ -126,12 +112,9 @@ class SafetyEvalCallback(BaseCallback):
                 if create_gif:
                     frame = self.create_frame()
 
-                if self.model.blocker_heuristic.is_catastrophe(new_obs):
+                if self.model.blocker_heuristic.is_catastrophe(self._last_cost):
                     episode_catastrophes += 1  # Increment catastrophe count
                     
-                    if create_gif:
-                        frame = self.draw_catastrophe(frame)
-
                 if create_gif:        
                     frames.append(frame)
 
