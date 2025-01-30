@@ -1,8 +1,8 @@
 import numpy as np
 
-class MLPBlockerHeuristic:
-    def __init__(self):
-        pass
+class ButtonBlockerHeuristic:
+    def __init__(self, block_zone=0.92):
+        self.block_zone = block_zone
     
     def is_catastrophe(self, cost):   
         if np.any(cost > 0):  # Checks if any element in `cost` is greater than 0
@@ -10,28 +10,38 @@ class MLPBlockerHeuristic:
         return False
 
     def is_block_zone(self, obs):
-        gremlins = obs[44:60]  # Indices 44 through 59
-        hazards = obs[60:75]   # Indices 60 through 75
+        buttons = obs[12:28]  # Indices 12 through 27
+        goal = obs[28:44]     # Indices 28 through 43
+        hazards = obs[44:60]  # Indices 44 through 59
+        # hazards = obs[60:75]   # Indices 60 through 75
 
-        # Check lidar elements [0,3] or [12,15]
-        if any(gremlins[i] > 0.92 for i in range(0, 4)) or any(gremlins[i] > 0.92 for i in range(12, 16)):
+        # Check specific ranges in buttons
+        if (np.any(buttons[0:4] > self.block_zone) or np.any(buttons[12:16] > self.block_zone)):
+            if not np.array_equal(buttons, goal):
+                return [-1, 0]
+
+        if np.any(buttons[4:12] > self.block_zone):
+            if not np.array_equal(buttons, goal):
+                return [1, 0]
+
+        # Check gremlins
+        if (np.any(hazards[0:4] > self.block_zone) or np.any(hazards[12:16] > self.block_zone)):
             return [-1, 0]
 
-        # Check lidar elements [4,11]
-        if any(gremlins[i] > 0.92 for i in range(4, 12)):
+        if np.any(hazards[4:12] > self.block_zone):
             return [1, 0]
 
-        # Check vase elements [0,3] or [12,15]
-        if any(hazards[i] > 0.92 for i in range(0, 4)) or any(hazards[i] > 0.92 for i in range(12, 16)):
-            return [-1, 0]
+        # # Check hazards
+        # if (np.any(hazards[0:4] > self.block_zone) or np.any(hazards[12:16] > self.block_zone)):
+        #     return [-1, 0]
 
-        # Check vase elements [4,11]
-        if any(hazards[i] > 0.92 for i in range(4, 12)):
-            return [1, 0]
+        # if np.any(hazards[4:12] > self.block_zone):
+        #     return [1, 0]
 
         # Default return if no conditions are met
         return [2, 2]
-    
+
+
     def override_block(self):
         return [-1, 0]
 

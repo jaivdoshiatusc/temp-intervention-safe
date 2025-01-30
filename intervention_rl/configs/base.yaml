@@ -12,7 +12,7 @@ train:
 
 eval:
   eval_seed: 20                     # Seed for evaluation
-  eval_episodes: 5                  # Number of episodes to evaluate
+  eval_episodes: 12                  # Number of episodes to evaluate
   verbose: 1
 
 hp_name: e-${env.short_name}_a-${algo.name}_et-${exp_type}_ent-${algo[${algo.name}].ent_coef}_al-${env.alpha}_be-${env.beta}_io-${env.iota}_s-${seed}
@@ -25,7 +25,7 @@ wandb:
 
 defaults:
   - _self_
-  - env: safety
+  - env: goal
   - algo: ppo
   - override hydra/job_logging: disabled
   # - override hydra/launcher: local

@@ -122,7 +122,7 @@ class SafetyEvalCallback(BaseCallback):
                     reward = reward[0]
                 if isinstance(cost, np.ndarray):
                     cost = cost[0]
-                episode_reward += (reward - cost)
+                episode_reward += reward
                 episode_length += 1
                 obs = new_obs
 
@@ -160,13 +160,13 @@ class SafetyEvalCallback(BaseCallback):
         mean_disagreement = np.mean(all_disagreements)
 
         # Record evaluation metrics (mean, cumulative)
-        self.logger.record('eval/mean_reward', mean_reward)
-        self.logger.record('eval/std_reward', std_reward)
-        self.logger.record('eval/mean_ep_length', mean_ep_length)
-        self.logger.record('eval/mean_catastrophes', mean_catastrophes)
-        self.logger.record('eval/mean_env_intervention', mean_env_intervention)
-        self.logger.record('eval/mean_exp_intervention', mean_exp_intervention)
-        self.logger.record('eval/mean_disagreement', mean_disagreement)
+        self.logger.record('eval/ep_rew_mean', mean_reward)
+        self.logger.record('eval/ep_rew_std', std_reward)
+        self.logger.record('eval/ep_len_mean', mean_ep_length)
+        self.logger.record('eval/ep_catastrophe_mean', mean_catastrophes)
+        self.logger.record('eval/ep_env_intervention_mean', mean_env_intervention)
+        self.logger.record('eval/ep_exp_intervention_mean', mean_exp_intervention)
+        self.logger.record('eval/ep_disagreement_mean', mean_disagreement)
 
         self.logger.record('eval/blocker_cum_catastrophe', self.blocker_cum_catastrophe)
         self.logger.record('eval/blocker_cum_env_intervention', self.blocker_cum_env_intervention)

@@ -7,7 +7,11 @@ from gymnasium import spaces
 from stable_baselines3.common.utils import obs_as_tensor
 
 from intervention_rl.blocker.mlp_blocker_heuristic import MLPBlockerHeuristic
+from intervention_rl.blocker.button_blocker_heuristic import ButtonBlockerHeuristic
+from intervention_rl.blocker.push_blocker_heuristic import PushBlockerHeuristic
 from intervention_rl.blocker.mlp_blocker_trainer import MLPBlockerTrainer
+from intervention_rl.blocker.button_blocker_trainer import ButtonBlockerTrainer
+from intervention_rl.blocker.push_blocker_trainer import PushBlockerTrainer
 
 class PPO_HIRL(PPO):
     def __init__(
@@ -139,12 +143,24 @@ class PPO_HIRL(PPO):
         self._current_episode_catastrophe = np.zeros(self.env.num_envs)
         self._current_episode_total_bonus = np.zeros(self.env.num_envs)
         self._current_episode_total_penalty = np.zeros(self.env.num_envs)
+        self._current_episode_reward_no_penalty = np.zeros(self.env.num_envs)
         self._current_episode_env_intervention = np.zeros(self.env.num_envs)
         self._current_episode_exp_intervention = np.zeros(self.env.num_envs)
+        self._current_episode_comparision = np.zeros(self.env.num_envs)
+        self._current_episode_disagreement = np.zeros(self.env.num_envs)
 
-        self.blocker_heuristic = MLPBlockerHeuristic()
-        if self.exp_type in ["ours", "hirl"]:
-            self.blocker_model = MLPBlockerTrainer(device=self.device)
+        if "Goal" in self.env_name:
+            self.blocker_heuristic = MLPBlockerHeuristic(self.blocker_clearance)
+            if self.exp_type in ["ours", "hirl"]:
+                self.blocker_model = MLPBlockerTrainer(device=self.device)
+        elif "Button" in self.env_name:
+            self.blocker_heuristic = ButtonBlockerHeuristic(self.blocker_clearance)
+            if self.exp_type in ["ours", "hirl"]:
+                self.blocker_model = ButtonBlockerTrainer(device=self.device)
+        elif "Push" in self.env_name:
+            self.blocker_heuristic = PushBlockerHeuristic(self.blocker_clearance)
+            if self.exp_type in ["ours", "hirl"]:
+                self.blocker_model = PushBlockerTrainer(device=self.device)
 
     def get_env_state(self, env, env_name, env_idx, policy_type, saved_obs):
         """
@@ -179,7 +195,6 @@ class PPO_HIRL(PPO):
         # Sample new weights for the state dependent exploration
         if self.use_sde:
             self.policy.reset_noise(env.num_envs)
-
 
         callback.on_rollout_start()
 
@@ -248,8 +263,6 @@ class PPO_HIRL(PPO):
                             ) 
                             model_entropy_arr.append(model_entropy)
                             disagreement_prob_arr.append(disagreement_prob)
-
-                            # Track total_model_entropy, total_disagreement_prob
                             total_model_entropy += model_entropy
                             total_disagreement_prob += disagreement_prob
 
@@ -268,6 +281,7 @@ class PPO_HIRL(PPO):
                             if blocker_heuristic_decision != blocker_model_decision:
                                 # Track cum_disagreement
                                 self.cum_disagreement += 1
+                                self._current_episode_disagreement[i] += 1     
                         # Blocker Phase
                         else:
                             if self.pretrained_blocker and not self.pretrained_blocker_switch:
@@ -279,11 +293,10 @@ class PPO_HIRL(PPO):
                                 agent_obs,
                                 action,
                                 blocker_heuristic_decision
-                            ) # this needs to be adapted to accept both blocker_heuristic_decision types
+                            ) 
+
                             model_entropy_arr.append(model_entropy)
                             disagreement_prob_arr.append(disagreement_prob)
-
-                            # Track total_model_entropy, total_disagreement_prob
                             total_model_entropy += model_entropy
                             total_disagreement_prob += disagreement_prob
                         
@@ -291,19 +304,21 @@ class PPO_HIRL(PPO):
                                 modified_actions[i] = blocker_model_decision
                                 # Track cum_env_intervention
                                 self.cum_env_intervention += 1
-                                self._current_episode_env_intervention[i] += 1
                                 self.blocker_cum_env_intervention += 1
+                                self._current_episode_env_intervention[i] += 1
                                 env_intervention_occurred_this_step[i] = True
                             if blocker_heuristic_decision != [2,2]:
                                 # Track cum_exp_intervention
                                 self.cum_exp_intervention += 1
-                                self._current_episode_exp_intervention[i] += 1
                                 self.blocker_cum_exp_intervention += 1
+                                self._current_episode_exp_intervention[i] += 1
                                 exp_intervention_occurred_this_step[i] = True
                             if blocker_heuristic_decision != blocker_model_decision:
                                 # Track cum_disagreement
                                 self.cum_disagreement += 1
                                 self.blocker_cum_disagreement += 1
+                                self._current_episode_disagreement[i] += 1
+                                self._current_episode_comparision[i] += 1
 
                     elif self.exp_type == "expert":
                         blocker_heuristic_decision = self.blocker_heuristic.should_block(blocker_heuristic_obs, self._last_info[i].get('cost', 0))
@@ -340,22 +355,24 @@ class PPO_HIRL(PPO):
                     catastrophe_occurred_this_step[i] = True
                 else:
                     catastrophe_occurred_this_step[i] = False
+
+            self._current_episode_reward_no_penalty += rewards
             
-            if self.penalty_type == "all":
+            if self.penalty_type == "penalty_hirl":
+                for i in range(env.num_envs):
+                    if env_intervention_occurred_this_step[i]:
+                        rewards[i] -= self.penalty
+                        self._current_episode_total_penalty[i] += self.penalty
+            
+            if self.penalty_type == "penalty_ours" and self.num_timesteps > self.blocker_switch_time:
                 for i in range(env.num_envs):
                     if env_intervention_occurred_this_step[i]:
                         rewards[i] -= self.penalty
                         self._current_episode_total_penalty[i] += self.penalty
 
-            if self.penalty_type == "catastrophe":
+            if self.penalty_type == "reward_shaping":
                 for i in range(env.num_envs):
                     if catastrophe_occurred_this_step[i]:
-                        rewards[i] -= self.penalty
-                        self._current_episode_total_penalty[i] += self.penalty
-            
-            if self.penalty_type == "blocker" and self.num_timesteps > self.blocker_switch_time:
-                for i in range(env.num_envs):
-                    if env_intervention_occurred_this_step[i]:
                         rewards[i] -= self.penalty
                         self._current_episode_total_penalty[i] += self.penalty
 
@@ -382,9 +399,23 @@ class PPO_HIRL(PPO):
                             total_bonus += bonus
                             self._current_episode_total_bonus[i] += bonus
 
-                        # Increment alpha and beta
-                        self.alpha = min(self.alpha + self.alpha_increase, self.max_alpha)
-                        self.beta = min(self.beta + self.beta_increase, self.max_beta)
+                            # Increment alpha and beta
+                            self.alpha = min(self.alpha + self.alpha_increase, self.max_alpha)
+                            self.beta = min(self.beta + self.beta_increase, self.max_beta)
+                    elif self.bonus_type == 'both':
+                        if exp_intervention_occurred_this_step[i]:
+                            intervention_bonus = self.iota
+                            blocker_bonus = 0
+                            combined_bonus = 0
+                            if len(model_entropy_arr) > i and len(disagreement_prob_arr) > i:
+                                blocker_bonus = (self.alpha * model_entropy_arr[i]) + (self.beta * disagreement_prob_arr[i])
+                            combined_bonus = intervention_bonus + blocker_bonus
+                            rewards[i] += combined_bonus
+                            total_bonus += combined_bonus
+                            self._current_episode_total_bonus[i] += combined_bonus
+
+                            self.alpha = min(self.alpha + self.alpha_increase, self.max_alpha)
+                            self.beta = min(self.beta + self.beta_increase, self.max_beta)
 
             # Update cumulative episode reward and length
             self._current_episode_reward += rewards
@@ -400,8 +431,11 @@ class PPO_HIRL(PPO):
                         "catastrophes": self._current_episode_catastrophe[i],
                         "total_bonus": self._current_episode_total_bonus[i],
                         "total_penalty": self._current_episode_total_penalty[i],
+                        "r_no_penalty": self._current_episode_reward_no_penalty[i],
                         "env_interventions": self._current_episode_env_intervention[i],
                         "exp_interventions": self._current_episode_exp_intervention[i],
+                        "comparision": self._current_episode_comparision[i],
+                        "disagreement": self._current_episode_disagreement[i]
                     }
                     self.custom_ep_info_buffer.append(ep_info)
                     self._current_episode_reward[i] = 0
@@ -409,8 +443,11 @@ class PPO_HIRL(PPO):
                     self._current_episode_catastrophe[i] = 0
                     self._current_episode_total_bonus[i] = 0
                     self._current_episode_total_penalty[i] = 0
+                    self._current_episode_reward_no_penalty[i] = 0
                     self._current_episode_env_intervention[i] = 0
                     self._current_episode_exp_intervention[i] = 0
+                    self._current_episode_comparision[i] = 0
+                    self._current_episode_disagreement[i] = 0
 
             # Give access to local variables
             callback.update_locals(locals())
@@ -505,15 +542,21 @@ class PPO_HIRL(PPO):
             ep_catastrophe_mean = np.mean([ep_info["catastrophes"] for ep_info in self.custom_ep_info_buffer])
             ep_total_bonus_mean = np.mean([ep_info["total_bonus"] for ep_info in self.custom_ep_info_buffer])
             ep_total_penalty_mean = np.mean([ep_info["total_penalty"] for ep_info in self.custom_ep_info_buffer])
+            ep_r_no_penalty_mean = np.mean([ep_info["r_no_penalty"] for ep_info in self.custom_ep_info_buffer]) 
             ep_env_intervention_mean = np.mean([ep_info["env_interventions"] for ep_info in self.custom_ep_info_buffer])
             ep_exp_intervention_mean = np.mean([ep_info["exp_interventions"] for ep_info in self.custom_ep_info_buffer])
+            ep_comparision_mean = np.mean([ep_info["comparision"] for ep_info in self.custom_ep_info_buffer])
+            ep_disagreement_mean = np.mean([ep_info["disagreement"] for ep_info in self.custom_ep_info_buffer])
             self.logger.record('rollout/ep_rew_mean', ep_rew_mean)
             self.logger.record('rollout/ep_len_mean', ep_len_mean)
             self.logger.record('rollout/ep_catastrophe_mean', ep_catastrophe_mean)
             self.logger.record('rollout/ep_total_bonus_mean', ep_total_bonus_mean)
             self.logger.record('rollout/ep_total_penalty_mean', ep_total_penalty_mean)
+            self.logger.record('rollout/ep_r_no_penalty_mean', ep_r_no_penalty_mean)
             self.logger.record('rollout/ep_env_intervention_mean', ep_env_intervention_mean)
             self.logger.record('rollout/ep_exp_intervention_mean', ep_exp_intervention_mean)
+            self.logger.record('rollout/ep_comparision_mean', ep_comparision_mean)
+            self.logger.record('rollout/ep_disagreement_mean', ep_disagreement_mean)
 
         callback.update_locals(locals())
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-class MLPBlockerHeuristic:
+class PushBlockerHeuristic:
     def __init__(self, block_zone=0.92):
         self.block_zone = block_zone
     
@@ -10,8 +10,10 @@ class MLPBlockerHeuristic:
         return False
 
     def is_block_zone(self, obs):
-        hazards = obs[28:44]  # Indices 28 through 43
-        vase = obs[44:60]   # Indices 44 through 59
+        goal = obs[12:28]     # Indices 28 through 43 
+        hazards = obs[28:44]   # Indices 60 through 75 obs[28:44]
+        pillars = obs[44:60]  # Indices 44 through 59 obs[44:60]
+        push_box = obs[60:75]  # Indices 12 through 27 obs[60:75]
 
         # Check lidar elements [0,3] or [12,15]
         if any(hazards[i] > self.block_zone for i in range(0, 4)) or any(hazards[i] > self.block_zone for i in range(12, 16)):
@@ -21,17 +23,10 @@ class MLPBlockerHeuristic:
         if any(hazards[i] > self.block_zone for i in range(4, 12)):
             return [1, 0]
 
-        # # Check vase elements [0,3] or [12,15]
-        # if any(vase[i] > self.block_zone for i in range(0, 4)) or any(vase[i] > self.block_zone for i in range(12, 16)):
-        #     return [-1, 0]
-
-        # # Check vase elements [4,11]
-        # if any(vase[i] > self.block_zone for i in range(4, 12)):
-        #     return [1, 0]
-
         # Default return if no conditions are met
         return [2, 2]
-    
+
+
     def override_block(self):
         return [-1, 0]
 

@@ -1,13 +1,13 @@
-from pathlib import Path
 import os
+from pathlib import Path
+
 import torch
 import hydra
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 
-from intervention_rl.trainers.ppo_trainer import PPOTrainer
-
 # from intervention_rl.utils.log_utils import log
+from intervention_rl.trainers.ppo_trainer import PPOTrainer
 
 @hydra.main(config_path="configs", config_name="base", version_base="1.1")
 def main(cfg: DictConfig):
