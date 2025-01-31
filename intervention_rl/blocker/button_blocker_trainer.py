@@ -5,7 +5,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset
 
 class BlockerModel(nn.Module):
-    def __init__(self, obs_size=60, action_dim=2, hidden1=64, hidden2=32, output_classes=3):
+    def __init__(self, obs_size=72, action_dim=2, hidden1=64, hidden2=32, output_classes=3):
         super(BlockerModel, self).__init__()
         self.fc1 = nn.Linear(obs_size + action_dim, hidden1)
         self.fc2 = nn.Linear(hidden1, hidden2)
@@ -40,7 +40,7 @@ class BlockerDataset(Dataset):
         return obs, act, lab
 
 class ButtonBlockerTrainer:
-    def __init__(self, device='cpu', obs_size=60, action_dim=2, num_classes=3, lr=1e-3):
+    def __init__(self, device='cpu', obs_size=72, action_dim=2, num_classes=3, lr=1e-3):
         self.device = device
         self.model = BlockerModel(
             obs_size=obs_size,
@@ -61,9 +61,9 @@ class ButtonBlockerTrainer:
     def map_to_label(self, array_label):
         if array_label == [2, 2]:
             return 0   # 'none'
-        elif array_label == [-1, 0]:
+        elif array_label == [-1, -1]:
             return 1   # 'backward'
-        elif array_label == [1, 0]:
+        elif array_label == [1, 1]:
             return 2   # 'forward'
         else:
             raise ValueError("Unrecognized label array.")
@@ -73,9 +73,9 @@ class ButtonBlockerTrainer:
         if int_label == 0:
             return [2, 2]
         elif int_label == 1:
-            return [-1, 0]
+            return [-1, -1]
         elif int_label == 2:
-            return [1, 0]
+            return [1, 1]
         else:
             raise ValueError("Unrecognized integer label.")
 

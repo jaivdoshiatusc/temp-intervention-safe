@@ -2,7 +2,7 @@ defaults:
     - base
     
 # Environment-specific hyperparameters
-name: 'SafetyPointButton1-v0'
+name: 'SafetyCarButton1-v0'
 short_name: 'button'
 new_action: [-1, 0]
 catastrophe_clearance: 0
