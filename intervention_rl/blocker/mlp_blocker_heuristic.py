@@ -13,13 +13,22 @@ class MLPBlockerHeuristic:
         hazards = obs[40:56]  # Indices 28 through 43
         # vase = obs[44:60]   # Indices 44 through 59
 
-        # Check lidar elements [0,3] or [12,15]
-        if any(hazards[i] > 0.86 for i in range(0, 3)) or any(hazards[i] > 0.86 for i in range(13, 16)):
+        if any(hazards[i] > 0.86 for i in range(2, 6)) and any(hazards[i] > 0.86 for i in range(10, 14)):
+            return [2, 2]
+
+        if any(hazards[i] > 0.86 for i in range(2, 6)):
+            return [1, 1]
+        
+        if any(hazards[i] > 0.86 for i in range(10, 14)):
             return [-1, -1]
 
-        # Check lidar elements [4,11]
-        if any(hazards[i] > 0.86 for i in range(6, 11)):
-            return [1, 1]
+        # # Check lidar elements [0,3] or [12,15]
+        # if any(hazards[i] > 0.86 for i in range(0, 3)) or any(hazards[i] > 0.86 for i in range(13, 16)):
+        #     return [-1, -1]
+
+        # # Check lidar elements [4,11]
+        # if any(hazards[i] > 0.86 for i in range(6, 11)):
+        #     return [1, 1]
 
         # # Check lidar elements [0,3] or [12,15]
         # if any(hazards[i] > self.block_zone for i in range(0, 4)) or any(hazards[i] > self.block_zone for i in range(12, 16)):

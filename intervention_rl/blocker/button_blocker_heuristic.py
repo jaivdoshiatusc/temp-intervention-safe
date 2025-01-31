@@ -14,22 +14,26 @@ class ButtonBlockerHeuristic:
         goal = obs[40:56]
         hazards = obs[56:72]
         
-        # Check specific ranges in buttons
-        if (np.any(buttons[0:3] > 0.86) or np.any(buttons[13:16] > 0.86)):
+        if (np.any(buttons[2:6]) > 0.86) and (np.any(buttons[10:14]) > 0.86):
+            if not np.array_equal(buttons, goal):
+                return [2, 2]
+            
+        if any(hazards[i] > 0.86 for i in range(2, 6)) and any(hazards[i] > 0.86 for i in range(10, 14)):
+            return [2, 2]
+
+        if (np.any(buttons[2:6]) > 0.86):
             if not np.array_equal(buttons, goal):
                 return [1, 1]
             
-        if np.any(buttons[6:11] > 0.86):
+        if (np.any(buttons[10:14]) > 0.86):
             if not np.array_equal(buttons, goal):
                 return [-1, -1]
-
-        # Check lidar elements [0,3] or [12,15]
-        if any(hazards[i] > 0.86 for i in range(0, 3)) or any(hazards[i] > 0.86 for i in range(13, 16)):
-            return [-1, -1]
-
-        # Check lidar elements [4,11]
-        if any(hazards[i] > 0.86 for i in range(6, 11)):
+            
+        if any(hazards[i] > 0.86 for i in range(2, 6)):
             return [1, 1]
+        
+        if any(hazards[i] > 0.86 for i in range(10, 14)):
+            return [-1, -1]
 
         # # Check hazards
         # if (np.any(hazards[0:4] > self.block_zone) or np.any(hazards[12:16] > self.block_zone)):

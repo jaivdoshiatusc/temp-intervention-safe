@@ -25,23 +25,47 @@ class MLPBlockerHeuristic:
         buttons = obs[24:40]
         goal = obs[40:56]
         hazards = obs[56:72]
-        
-        # Check specific ranges in buttons
-        if (np.any(buttons[0:4] > 0.86) or np.any(buttons[12:16] > 0.86)):
+
+        # front == 10, 11, 12, 13: [-1, -1]
+        # back == 2, 3, 4, 5: [1, 1]
+
+        if (np.any(buttons[2:6]) > 0.86) and (np.any(buttons[10:14]) > 0.86):
+            if not np.array_equal(buttons, goal):
+                return [2, 2]
+            
+        if any(hazards[i] > 0.86 for i in range(2, 6)) and any(hazards[i] > 0.86 for i in range(10, 14)):
+            return [2, 2]
+
+        if (np.any(buttons[2:6]) > 0.86):
             if not np.array_equal(buttons, goal):
                 return [1, 1]
             
-        if np.any(buttons[5:11] > 0.86):
+        if (np.any(buttons[10:14]) > 0.86):
             if not np.array_equal(buttons, goal):
                 return [-1, -1]
-
-        # Check lidar elements [0,3] or [12,15]
-        if any(hazards[i] > 0.86 for i in range(0, 4)) or any(hazards[i] > 0.86 for i in range(12, 16)):
+            
+        if any(hazards[i] > 0.86 for i in range(2, 6)):
             return [1, 1]
-
-        # Check lidar elements [4,11]
-        if any(hazards[i] > 0.86 for i in range(5, 11)):
+        
+        if any(hazards[i] > 0.86 for i in range(10, 14)):
             return [-1, -1]
+
+        # # Check specific ranges in buttons
+        # if (np.any(buttons[0:4] > 0.86) or np.any(buttons[12:16] > 0.86)):
+        #     if not np.array_equal(buttons, goal):
+        #         return [-1, -1]
+            
+        # if np.any(buttons[5:11] > 0.86):
+        #     if not np.array_equal(buttons, goal):
+        #         return [1, 1]
+
+        # # Check lidar elements [0,3] or [12,15]
+        # if any(hazards[i] > 0.86 for i in range(0, 4)) or any(hazards[i] > 0.86 for i in range(12, 16)):
+        #     return [-1, -1]
+
+        # # Check lidar elements [4,11]
+        # if any(hazards[i] > 0.86 for i in range(5, 11)):
+        #     return [1, 1]
 
         # # Check vase elements [0,3] or [12,15]
         # if any(vase[i] > 0.92 for i in range(0, 4)) or any(vase[i] > 0.92 for i in range(12, 16)):
@@ -106,21 +130,23 @@ def main():
     obs, _ = env.reset(seed=42)
     # env.env.unwrapped.render_parameters.width = 1920
     # env.env.unwrapped.render_parameters.height = 1080
-    total_steps = 100
+    total_steps = 200
     frames = []
 
     my_blocker_heuristic = MLPBlockerHeuristic()
 
     for i in range(total_steps):
-        if i < 20:
-            act = [-1, 1]
-        # # elif 11 <= i < 20: 
-        # #     act = [0, 0]
-        # # elif 21 <= i < 65:
-        # #     act = [-1, -1]
-        else:
-            act = [-1, -1]
-        # act = env.action_space.sample()
+        # if i < 20:
+        #     act = [-1, 1]
+        # # # elif 11 <= i < 20: 
+        # # #     act = [0, 0]
+        # # # elif 21 <= i < 65:
+        # # #     act = [-1, -1]
+        # else:
+        #     act = [-1, -1]
+        # # act = env.action_space.sample()
+
+        act = [-1,1]
 
         flag = 0
 
@@ -149,11 +175,11 @@ def main():
         extended_frame[:frame_height, :, :] = render_obs
 
         # Display observation values with wrapping every 6 values
-        obs_values = obs[24:40]
+        obs_values = obs[40:56]
         text_x = 10
         text_y = frame_height + 15
         for idx, value in enumerate(obs_values):
-            text = f"{idx+28}:{value:.2f}"
+            text = f"{idx+0}:{value:.2f}"
             cv2.putText(extended_frame, text, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.30, (255, 255, 255), 1)
 
             # Move to the next position
